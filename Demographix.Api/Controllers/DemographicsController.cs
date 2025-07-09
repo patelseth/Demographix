@@ -1,81 +1,80 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
-using Demographix.Api.Models;
+﻿using Demographix.Api.Models;
+using Demographix.Api.Services.Interfaces;
+
+using Microsoft.AspNetCore.Mvc;
 
 namespace Demographix.Api.Controllers
 {
 	[ApiController]
 	[Route("[controller]")]
-	public class DemographicsController(IHttpClientFactory httpClientFactory, ILogger<DemographicsController> logger) : ControllerBase
+	public class DemographicsController(
+		IRateLimiterService rateLimiter,
+		IDemographicsCacheService cacheService,
+		IDemographicsApiService demographicsApiService,
+		ILogger<DemographicsController> logger) : ControllerBase
 	{
-		private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
-		private readonly ILogger<DemographicsController> logger = logger;
+		private readonly IRateLimiterService _rateLimiter = rateLimiter;
+		private readonly IDemographicsCacheService _cacheService = cacheService;
+		private readonly IDemographicsApiService _demographicsApiService = demographicsApiService;
+		private readonly ILogger<DemographicsController> _logger = logger;
 
 		/// <summary>
 		/// Returns demographic data (age, gender, nationality) for a given name.
 		/// </summary>
 		/// <param name="name">The name to analyze</param>
+		/// <param name="cancellationToken"></param>
 		/// <returns>Combined demographic data</returns>
+		[Produces("application/json")]
+		[ProducesResponseType(typeof(Demographics), 200)]
+		[ProducesResponseType(400)]
+		[ProducesResponseType(429)]
+		[ProducesResponseType(500)]
 		[HttpGet]
-		public async Task<IActionResult> Get([FromQuery] string name)
+		public async Task<IActionResult> Get([FromQuery] string name, CancellationToken cancellationToken)
 		{
 			if (string.IsNullOrWhiteSpace(name))
 				return BadRequest("Query parameter 'name' is required.");
 
-			var client = _httpClientFactory.CreateClient();
+			var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-			var agifyTask = client.GetFromJsonAsync<AgifyResponse>($"https://api.agify.io?name={name}");
-			var genderizeTask = client.GetFromJsonAsync<GenderizeResponse>($"https://api.genderize.io?name={name}");
-			var nationalizeTask = client.GetFromJsonAsync<NationalizeResponse>($"https://api.nationalize.io?name={name}");
+			if (!IsRequestAllowed(clientIp))
+				return StatusCode(429, "Rate limit exceeded. Try again later.");
 
-			try
-			{
-				await Task.WhenAll(agifyTask, genderizeTask, nationalizeTask);
-			}
-			catch (Exception ex)
-			{
-				logger.LogError(ex, "Error calling external APIs for name '{Name}'", name);
-				return StatusCode(503, "Failed to retrieve data from external services.");
-			}
+			if (TryGetFromCache(name, out var cached))
+				return Ok(cached);
 
-			var agify = agifyTask.Result;
-			var genderize = genderizeTask.Result;
-			var nationalize = nationalizeTask.Result;
+			var demographics = await _demographicsApiService.FetchDemographicsAsync(name, cancellationToken);
 
-			var nationalities = nationalize?.Nationality?
-				.OrderByDescending(c => c.Probability)
-				.Take(3)
-				.Select(c => new Nationality
-				{
-					CountryCode = c.CountryCode,
-					CountryName = GetCountryName(c.CountryCode),
-					Probability = c.Probability
-				})
-				.ToList() ?? [];
+			SetCache(name, demographics);
 
-			var result = new Demographics
-			{
-				Name = name,
-				Age = agify?.Age,
-				Gender = genderize?.Gender,
-				GenderProbability = genderize?.Probability,
-				Nationalities = nationalities
-			};
-
-			return Ok(result);
+			return Ok(demographics);
 		}
 
-		private static string GetCountryName(string countryCode)
+		private bool IsRequestAllowed(string clientId)
 		{
-			try
+			var allowed = _rateLimiter.IsAllowed(clientId);
+
+			if (!allowed)
 			{
-				var region = new RegionInfo(countryCode);
-				return region.EnglishName;
+				_logger.LogWarning("Rate limit exceeded for client: {ClientId}", clientId);
+				Response.Headers.RetryAfter = "60";
 			}
-			catch
-			{
-				return countryCode;
-			}
+
+			return allowed;
+		}
+
+		private bool TryGetFromCache(string key, out Demographics? demographics)
+		{
+			var found = _cacheService.TryGet(key, out demographics);
+			if (found)
+				_logger.LogInformation("Cache hit for key: {Key}", key);
+			return found;
+		}
+
+		private void SetCache(string key, Demographics demographics)
+		{
+			_cacheService.Set(key, demographics);
+			_logger.LogInformation("Cache set for key: {Key}", key);
 		}
 	}
 }
