@@ -1,38 +1,83 @@
-.App {
+/* src/App.css */
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f9f9f9;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-top: 2rem;
+}
+
+h1 {
   text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.input-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  gap: 0.5rem;
+}
+
+.input-group input {
+  padding: 0.6rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.input-group button {
+  padding: 0.6rem;
+  font-size: 1rem;
+  background-color: #1e90ff;
   color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-.App-link {
-  color: #61dafb;
+.input-group button:disabled {
+  background-color: #999;
+  cursor: not-allowed;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.results {
+  margin-top: 1.5rem;
+}
+
+.results p {
+  margin: 0.3rem 0;
+}
+
+ul {
+  padding-left: 1rem;
+}
+
+.error {
+  color: #c0392b;
+  margin-top: 1rem;
+}
+
+/* Responsive tweaks */
+@media (min-width: 600px) {
+  .input-group {
+    flex-direction: row;
   }
-  to {
-    transform: rotate(360deg);
+
+  .input-group input {
+    flex: 1;
+  }
+
+  .input-group button {
+    width: 150px;
   }
 }

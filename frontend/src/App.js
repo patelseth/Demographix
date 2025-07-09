@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './App.css';
 
 function App() {
   const [name, setName] = useState('');
@@ -21,26 +22,29 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Demographix Frontend</h1>
-      <input
-        type="text"
-        placeholder="Enter name"
-        value={name}
-        onChange={e => setName(e.target.value)}
-      />
-      <button onClick={fetchDemographics} disabled={!name.trim()}>
-        Fetch Demographics
-      </button>
+    <div className="container">
+      <h1>Demographix</h1>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <div className="input-group">
+        <input
+          type="text"
+          placeholder="Enter name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+        <button onClick={fetchDemographics} disabled={!name.trim()}>
+          Search
+        </button>
+      </div>
+
+      {error && <p className="error">{error}</p>}
 
       {data && (
-        <div style={{ marginTop: 20 }}>
+        <div className="results">
           <p><strong>Name:</strong> {data.name}</p>
           <p><strong>Age:</strong> {data.age}</p>
           <p><strong>Gender:</strong> {data.gender} ({(data.genderProbability * 100).toFixed(2)}%)</p>
-          <p><strong>Nationalities:</strong></p>
+          <p><strong>Top Nationalities:</strong></p>
           <ul>
             {data.nationalities.map(n => (
               <li key={n.countryCode}>
