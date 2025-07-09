@@ -15,24 +15,27 @@ obj/
 *.suo
 *.userosscache
 *.sln.docstates
-*.ncrunch*
-_ReSharper*/
-*.DotSettings.user
-.vscode/
+
+# Visual Studio folder
+.vs/
+
+# Rider
 .idea/
-TestResults/
-coverage/
-*.coverage
-*.coveragexml
-artifacts/
-publish/
-secrets.json
+*.DotSettings.user
 
 # ASP.NET scaffolding
 ScaffoldingReadMe.txt
 
 # dotnet user secrets
 **/secrets.json
+
+# Test and coverage results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+artifacts/
+publish/
 
 # ---------------------------------
 # Node.js / React
