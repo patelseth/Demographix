@@ -6,9 +6,10 @@ namespace Demographix.Api.Controllers
 {
 	[ApiController]
 	[Route("[controller]")]
-	public class DemographicsController(IHttpClientFactory httpClientFactory) : ControllerBase
+	public class DemographicsController(IHttpClientFactory httpClientFactory, ILogger<DemographicsController> logger) : ControllerBase
 	{
 		private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+		private readonly ILogger<DemographicsController> logger = logger;
 
 		/// <summary>
 		/// Returns demographic data (age, gender, nationality) for a given name.
@@ -27,7 +28,15 @@ namespace Demographix.Api.Controllers
 			var genderizeTask = client.GetFromJsonAsync<GenderizeResponse>($"https://api.genderize.io?name={name}");
 			var nationalizeTask = client.GetFromJsonAsync<NationalizeResponse>($"https://api.nationalize.io?name={name}");
 
-			await Task.WhenAll(agifyTask, genderizeTask, nationalizeTask);
+			try
+			{
+				await Task.WhenAll(agifyTask, genderizeTask, nationalizeTask);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex, "Error calling external APIs for name '{Name}'", name);
+				return StatusCode(503, "Failed to retrieve data from external services.");
+			}
 
 			var agify = agifyTask.Result;
 			var genderize = genderizeTask.Result;
