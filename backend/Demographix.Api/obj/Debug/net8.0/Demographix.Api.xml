@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Demographix.Api</name>
+    </assembly>
+    <members>
+        <member name="M:Demographix.Api.Controllers.DemographicsController.Get(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Returns demographic data (age, gender, nationality) for a given name.
+            </summary>
+            <param name="name">The name to analyze</param>
+            <param name="cancellationToken"></param>
+            <returns>Combined demographic data</returns>
+        </member>
+    </members>
+</doc>
